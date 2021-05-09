@@ -45,7 +45,7 @@ pub const Net = struct {
         net.synapses.deinit();
     }
 
-    pub fn append(self: *Net, t_min: u16, t_max: u16, r_max: u16) !Ptr {
+    pub fn append(self: *Net, t_min: u8, t_max: u8, r_max: u16) !Ptr {
         const pos = self.neurons.items.len;
         const n = Neuron.init(self.alloc, t_min, t_max, r_max);
         try self.neurons.append(n);
@@ -61,14 +61,16 @@ pub const Net = struct {
     }
 
     pub fn process_synapses(self: *Net) void {
-        for (self.synapses.items) |*s, i| {
-            s.process(self);
+        const neurons = self.neurons.items;
+        for (self.synapses.items) |*s| {
+            s.process(neurons);
         }
     }
 
     pub fn process_neurons(self: *Net) void {
-        for (self.neurons.items) |*n, i| {
-            n.process(self);
+        const synapses = self.synapses.items;
+        for (self.neurons.items) |*n| {
+            n.process(synapses);
         }
     }
 
@@ -81,17 +83,17 @@ pub const Net = struct {
 const Neuron = struct {
     const Targets = std.ArrayList(Ptr);
 
-    t_min: u16,
-    t_max: u16,
+    t_min: u8,
+    t_max: u8,
     potential: i16 = 0,
     recovery: u16 = 0,
     recovery_max: u16,
-    threshold: u16,
+    threshold: u8,
     inbox: i16 = 0,
     fired: bool = false,
     targets: Targets,
 
-    pub fn init(allocator: *Allocator, t_min: u16, t_max: u16, r_max: u16) Neuron {
+    pub fn init(allocator: *Allocator, t_min: u8, t_max: u8, r_max: u16) Neuron {
         return Neuron{
             .threshold = t_min,
             .t_min = t_min,
@@ -114,7 +116,7 @@ const Neuron = struct {
         self.inbox += signal;
     }
 
-    fn process(n: *Neuron, net: *Net) void {
+    fn process(n: *Neuron, synapses: []Synapse) void {
         const signal = n.inbox;
         n.inbox = 0;
         if (signal > 0 and n.potential >= 0) {
@@ -133,7 +135,7 @@ const Neuron = struct {
             n.fired = true;
 
             for (n.targets.items) |value| {
-                net.synapses.items[value].enqueue();
+                synapses[value].enqueue();
             }
         } else {
             n.fired = false;
@@ -150,7 +152,7 @@ const Neuron = struct {
     }
 };
 
-fn min(a: u16, b: u16) u16 {
+fn min(a: u8, b: u8) u8 {
     if (a < b) {
         return a;
     }
@@ -181,7 +183,8 @@ const Synapse = struct {
     fn print(s: *Synapse) void {
         print("{} {} {} {}\n", .{ s.queue, s.signal, s.pointer, s.size });
     }
-    fn process(s: *Synapse, net: *Net) callconv(.Inline) void {
+
+    fn process(s: *Synapse, neurons: []Neuron) void {
         if (s.queue == 0) {
             return;
         }
@@ -191,12 +194,12 @@ const Synapse = struct {
             s.pointer = 0;
         }
 
-        const one: u8 = 1;
-        const mask: u8 = one << s.pointer;
+        const oneByte: u8 = 1;
+        const mask: u8 = oneByte << s.pointer;
 
         if (s.queue & mask != 0) {
             s.queue &= ~mask;
-            net.neurons.items[s.target].enqueue(s.signal);
+            neurons[s.target].enqueue(s.signal);
         }
     }
 };
@@ -225,7 +228,7 @@ test "neuron" {
         if (rand.next() % 10 < 5) {
             n.enqueue(1);
         }
-        n.process(&net);
+        n.process(net.synapses.items);
 
         if (n.fired) {
             fired += 1;
@@ -279,7 +282,7 @@ test "verify network against golden sample (fragile!)" {
     var l: u16 = 0;
 
     while (l < neuron_count) : (l += 1) {
-        _ = try net.append(l % 3 + 1, l % 4 + 5, l % 2 + 1);
+        _ = try net.append(@intCast(u8, l % 3 + 1), @intCast(u8, l % 4 + 5), l % 2 + 1);
     }
 
     l = 0;

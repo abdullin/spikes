@@ -30,7 +30,7 @@ pub fn main() anyerror!void {
     var l: u16 = 0;
 
     while (l < neuron_count) : (l += 1) {
-        _ = try net.append(l % 3 + 1, l % 4 + 5, l % 2 + 1);
+        _ = try net.append(@intCast(u8, l % 3 + 1), @intCast(u8, l % 4 + 5), l % 2 + 1);
     }
 
     l = 0;
