@@ -28,6 +28,15 @@ const Net = struct {
         return n;
     }
 
+    fn print(net: *Net) void {
+        for (net.neurons.items) |*n| {
+            n.print();
+        }
+        for (net.synapses.items) |*s| {
+            s.print();
+        }
+    }
+
     pub fn deinit(net: *Net) void {
         for (net.neurons.items) |*n, i| {
             n.deinit();
@@ -253,6 +262,7 @@ test "verify network against golden sample (fragile!)" {
     const a = std.testing.allocator;
     const neuron_count = 50;
     const synapse_count = 200;
+    const epoch_count = 1000;
 
     var net = try Net.init(a);
     defer net.deinit();
@@ -261,7 +271,7 @@ test "verify network against golden sample (fragile!)" {
     var l: u16 = 0;
 
     while (l < neuron_count) : (l += 1) {
-        _ = try net.append(l % 3 + 1, l % 4 + 1, l % 2 + 1);
+        _ = try net.append(l % 3 + 1, l % 4 + 5, l % 2 + 1);
     }
 
     l = 0;
@@ -277,7 +287,7 @@ test "verify network against golden sample (fragile!)" {
     l = 0;
     var fired: u32 = 0;
 
-    while (l < 1000) : (l += 1) {
+    while (l < epoch_count) : (l += 1) {
         for (net.synapses.items[0..10]) |*s| {
             s.enqueue();
         }
@@ -290,7 +300,11 @@ test "verify network against golden sample (fragile!)" {
                 fired += 1;
             }
         }
-    }
 
-    print("\nfired={}\n", .{fired});
+        // print("{} fired={}\n", .{ l, fired });
+    }
+    expect(fired == 3044);
+    //print("{} fired={}\n", .{ epoch_count, fired });
+
+    //net.print();
 }
