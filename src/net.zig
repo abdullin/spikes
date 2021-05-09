@@ -12,7 +12,7 @@ const seed = @import("./seed.zig");
 
 pub const Delay = u3;
 pub const Signal = i8;
-pub const Ptr = usize; // pointer size in our world;
+pub const Ptr = u16; // pointer size in our world;
 
 pub const Net = struct {
     alloc: *Allocator,
@@ -45,15 +45,15 @@ pub const Net = struct {
         net.synapses.deinit();
     }
 
-    pub fn append(self: *Net, t_min: u16, t_max: u16, r_max: u32) !Ptr {
+    pub fn append(self: *Net, t_min: u16, t_max: u16, r_max: u16) !Ptr {
         const pos = self.neurons.items.len;
         const n = Neuron.init(self.alloc, t_min, t_max, r_max);
         try self.neurons.append(n);
-        return pos;
+        return @intCast(Ptr, pos);
     }
 
     pub fn link(self: *Net, left: Ptr, right: Ptr, delay: Delay, signal: Signal) !Ptr {
-        const pos = self.synapses.items.len;
+        const pos = @intCast(Ptr, self.synapses.items.len);
         const s = Synapse.init(delay, signal, right);
         _ = try self.neurons.items[left].targets.append(pos);
         try self.synapses.append(s);
@@ -83,15 +83,15 @@ const Neuron = struct {
 
     t_min: u16,
     t_max: u16,
-    potential: i32 = 0,
-    recovery: u32 = 0,
-    recovery_max: u32,
+    potential: i16 = 0,
+    recovery: u16 = 0,
+    recovery_max: u16,
     threshold: u16,
-    inbox: i32 = 0,
+    inbox: i16 = 0,
     fired: bool = false,
     targets: Targets,
 
-    pub fn init(allocator: *Allocator, t_min: u16, t_max: u16, r_max: u32) Neuron {
+    pub fn init(allocator: *Allocator, t_min: u16, t_max: u16, r_max: u16) Neuron {
         return Neuron{
             .threshold = t_min,
             .t_min = t_min,
@@ -201,6 +201,15 @@ const Synapse = struct {
     }
 };
 
+test "sizes" {
+    const n_size = @sizeOf(Neuron);
+
+    print("Neuron: {} ({}), Synapse: {} ({})\n", .{
+        @sizeOf(Neuron),  @bitSizeOf(Neuron),
+        @sizeOf(Synapse), @bitSizeOf(Synapse),
+    });
+}
+
 test "neuron" {
     var net = try Net.init(std.testing.allocator);
     defer net.deinit();
@@ -275,8 +284,8 @@ test "verify network against golden sample (fragile!)" {
 
     l = 0;
     while (l < synapse_count) : (l += 1) {
-        const source = l % neuron_count;
-        const target = rand.next() % neuron_count;
+        const source = @intCast(Ptr, l % neuron_count);
+        const target = @intCast(Ptr, rand.next() % neuron_count);
         const signal = @intCast(Signal, l % 4) - 1;
         const delay = @intCast(Delay, l % 4 + 1);
         const s = try net.link(source, target, delay, signal);

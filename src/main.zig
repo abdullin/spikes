@@ -6,9 +6,17 @@ const info = std.log.info;
 
 const Timer = time.Timer;
 
+const fixed = false;
+
+const Allocator = std.mem.Allocator;
+
 pub fn main() anyerror!void {
-    var buffer: [2000000]u8 = undefined;
-    const alloc = &std.heap.FixedBufferAllocator.init(&buffer).allocator;
+
+    //var buffer: [2000000]u8 = undefined;
+    //const alloc = &std.heap.FixedBufferAllocator.init(&buffer).allocator;
+
+    var general_purpose_allocator = std.heap.GeneralPurposeAllocator(.{}){};
+    const alloc = &general_purpose_allocator.allocator;
 
     const a = alloc;
     const neuron_count = 5_000;
@@ -27,8 +35,8 @@ pub fn main() anyerror!void {
 
     l = 0;
     while (l < synapse_count) : (l += 1) {
-        const source = l % neuron_count;
-        const target = rand.next() % neuron_count;
+        const source = @intCast(nets.Ptr, l % neuron_count);
+        const target = @intCast(nets.Ptr, rand.next() % neuron_count);
         const signal = @intCast(nets.Signal, l % 4) - 1;
         const delay = @intCast(nets.Delay, l % 4 + 1);
         const s = try net.link(source, target, delay, signal);
