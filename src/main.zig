@@ -1,37 +1,67 @@
 const std = @import("std");
-
-const Synapse = struct {
-    queue: u32,
-    signal: u8,
-    pointer: u8,
-    size: u8,
-    target: *Neuron,
-};
-
+const nets = @import("net.zig");
+const seed = @import("seed.zig");
+const time = std.time;
 const info = std.log.info;
-const ArrayList = std.ArrayList;
-const NeuronList = ArrayList(Neuron);
 
-const Cleft = struct {
-    target: *Neuron,
-};
+const Timer = time.Timer;
 
 pub fn main() anyerror!void {
-    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
-    var alloc = &gpa.allocator;
+    var buffer: [2000000]u8 = undefined;
+    const alloc = &std.heap.FixedBufferAllocator.init(&buffer).allocator;
 
-    defer {
-        const leaked = gpa.deinit();
-        if (leaked) {
-            info("leak detected!", .{});
+    const a = alloc;
+    const neuron_count = 5_000;
+    const synapse_count = 30_000;
+    const epoch_count = 100_000;
+
+    var net = try nets.Net.init(a);
+    defer net.deinit();
+
+    var rand = seed.Seed.init();
+    var l: u16 = 0;
+
+    while (l < neuron_count) : (l += 1) {
+        _ = try net.append(l % 3 + 1, l % 4 + 5, l % 2 + 1);
+    }
+
+    l = 0;
+    while (l < synapse_count) : (l += 1) {
+        const source = l % neuron_count;
+        const target = rand.next() % neuron_count;
+        const signal = @intCast(nets.Signal, l % 4) - 1;
+        const delay = @intCast(nets.Delay, l % 4 + 1);
+        const s = try net.link(source, target, delay, signal);
+        //net.synapses.items[s].print();
+    }
+
+    l = 0;
+    var fired: u32 = 0;
+
+    const stdout = std.io.getStdOut().writer();
+    const timer = try Timer.start();
+    var e: u32 = 0;
+
+    while (e < epoch_count) : (e += 1) {
+        for (net.synapses.items[0..10]) |*s| {
+            s.enqueue();
+        }
+
+        net.process_synapses();
+        net.process_neurons();
+
+        for (net.neurons.items) |*n| {
+            if (n.fired) {
+                fired += 1;
+            }
         }
     }
 
-    var neurons = NeuronList.init(alloc);
+    const elapsed = timer.read() / 1000_000;
 
-    try neurons.append();
+    try stdout.print("neurons: {}, synapses: {}, epochs: {}, spikes: {}\nrun in {}ms\n", .{
+        neuron_count, synapse_count, epoch_count,
 
-    defer neurons.deinit();
-
-    info("All your codebase are belong to us.", .{});
+        fired,        elapsed,
+    });
 }

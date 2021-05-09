@@ -8,13 +8,13 @@ const Synapses = std.ArrayList(Synapse);
 
 const print = @import("std").debug.print;
 
-const seed = @import("./seed.zig").Seed;
+const seed = @import("./seed.zig");
 
-const Delay = u3;
-const Signal = i8;
-const Ptr = usize; // pointer size in our world;
+pub const Delay = u3;
+pub const Signal = i8;
+pub const Ptr = usize; // pointer size in our world;
 
-const Net = struct {
+pub const Net = struct {
     alloc: *Allocator,
     neurons: Neurons,
     synapses: Synapses,
@@ -181,8 +181,7 @@ const Synapse = struct {
     fn print(s: *Synapse) void {
         print("{} {} {} {}\n", .{ s.queue, s.signal, s.pointer, s.size });
     }
-
-    fn process(s: *Synapse, net: *Net) void {
+    fn process(s: *Synapse, net: *Net) callconv(.Inline) void {
         if (s.queue == 0) {
             return;
         }
@@ -206,7 +205,7 @@ test "neuron" {
     var net = try Net.init(std.testing.allocator);
     defer net.deinit();
 
-    var rand = seed.init();
+    var rand = seed.Seed.init();
     const n1 = try net.append(2, 10, 5);
     const n = &net.neurons.items[n1];
 
@@ -232,7 +231,7 @@ test "neuron+synapse" {
     var net = try Net.init(std.testing.allocator);
     defer net.deinit();
 
-    var rand = seed.init();
+    var rand = seed.Seed.init();
     const n1 = try net.append(2, 10, 4);
     const n2 = try net.append(2, 10, 4);
     const s1 = try net.link(n1, n2, 2, 2);
@@ -267,7 +266,7 @@ test "verify network against golden sample (fragile!)" {
     var net = try Net.init(a);
     defer net.deinit();
 
-    var rand = seed.init();
+    var rand = seed.Seed.init();
     var l: u16 = 0;
 
     while (l < neuron_count) : (l += 1) {
