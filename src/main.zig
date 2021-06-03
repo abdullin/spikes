@@ -47,6 +47,7 @@ pub fn main() anyerror!void {
 
     const stdout = std.io.getStdOut().writer();
     const timer = try Timer.start();
+
     var e: u32 = 0;
 
     while (e < epoch_count) : (e += 1) {

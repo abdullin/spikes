@@ -237,9 +237,8 @@ test "neuron" {
         if (n.fired) {
             fired += 1;
         }
-        //n.print();
     }
-    expect(fired == 102);
+    try expect(fired == 102);
     print("neuron fired={}\n", .{fired});
 }
 
@@ -270,7 +269,7 @@ test "neuron+synapse" {
     }
 
     print("neuron fired={}\n", .{fired});
-    expect(fired == 111);
+    try expect(fired == 111);
 }
 
 test "verify network against golden sample (fragile!)" {
@@ -318,7 +317,7 @@ test "verify network against golden sample (fragile!)" {
 
         // print("{} fired={}\n", .{ l, fired });
     }
-    expect(fired == 3044);
+    try expect(fired == 3044);
     //print("{} fired={}\n", .{ epoch_count, fired });
 
     //net.print();
