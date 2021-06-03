@@ -160,24 +160,25 @@ fn min(a: u8, b: u8) u8 {
 }
 
 const Synapse = struct {
-    pointer: Delay = 0,
-    size: Delay,
+    target: Ptr, //u16
     queue: u8 = 0,
     signal: i8,
-    target: Ptr,
+    mask: u8,
+    bit: bool,
 
     pub fn init(size: Delay, signal: i8, n: Ptr) Synapse {
+        const oneByte: u8 = 1;
+        const mask: u8 = oneByte << (size);
         return Synapse{
-            .size = size,
+            .mask = mask,
             .signal = signal,
             .target = n,
+            .bit = false,
         };
     }
 
-    pub fn enqueue(self: *Synapse) void {
-        const one: u8 = 1;
-        const mask: u8 = one << self.pointer;
-        self.queue = self.queue | mask;
+    pub fn enqueue(s: *Synapse) void {
+        s.bit = true;
     }
 
     fn print(s: *Synapse) void {
@@ -185,20 +186,17 @@ const Synapse = struct {
     }
 
     fn process(s: *Synapse, neurons: []Neuron) void {
+        if (s.bit == true) {
+            s.queue |= 1;
+            s.bit = false;
+        }
         if (s.queue == 0) {
             return;
         }
 
-        s.pointer += 1;
-        if (s.pointer == s.size) {
-            s.pointer = 0;
-        }
+        s.queue = s.queue << 1;
 
-        const oneByte: u8 = 1;
-        const mask: u8 = oneByte << s.pointer;
-
-        if (s.queue & mask != 0) {
-            s.queue &= ~mask;
+        if (s.queue & s.mask != 0) {
             neurons[s.target].enqueue(s.signal);
         }
     }
