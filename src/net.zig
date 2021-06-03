@@ -185,12 +185,12 @@ const Synapse = struct {
     }
 
     fn process(s: *Synapse, neurons: []Neuron) void {
-        if (s.bit == false and s.queue == 0) {
-            return;
-        }
         if (s.bit == true) {
             s.queue |= 1;
             s.bit = false;
+        }
+        if (s.queue == 0) {
+            return;
         }
 
         s.queue = s.queue << 1;
