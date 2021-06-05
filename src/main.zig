@@ -13,9 +13,13 @@ const Allocator = std.mem.Allocator;
 pub fn main() anyerror!void {
     //var buffer: [2000000]u8 = undefined;
     //const alloc = &std.heap.FixedBufferAllocator.init(&buffer).allocator;
+    //
+    const track_memory_usage = false;
 
-    var general_purpose_allocator = std.heap.GeneralPurposeAllocator(.{}){};
-    const alloc = &general_purpose_allocator.allocator;
+    var gpa = std.heap.GeneralPurposeAllocator(.{
+        .enable_memory_limit = track_memory_usage,
+    }){};
+    const alloc = &gpa.allocator;
 
     const a = alloc;
     const neuron_count = 5_000;
@@ -46,6 +50,11 @@ pub fn main() anyerror!void {
     var fired: u32 = 0;
 
     const stdout = std.io.getStdOut().writer();
+
+    if (track_memory_usage) {
+        try stdout.print("memory: {}\n", .{std.fmt.fmtIntSizeBin(gpa.total_requested_bytes)});
+    }
+
     const timer = try Timer.start();
 
     var e: u32 = 0;
