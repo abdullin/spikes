@@ -130,7 +130,7 @@ const Neuron = struct {
         const DROP = -2;
         if (n.potential >= n.threshold) {
             n.potential = DROP;
-            n.threshold = min(n.t_max, n.threshold + 1);
+            n.threshold = std.math.min(n.t_max, n.threshold + 1);
             n.recovery = 0;
             n.fired = true;
 
@@ -151,13 +151,6 @@ const Neuron = struct {
         }
     }
 };
-
-fn min(a: u8, b: u8) u8 {
-    if (a < b) {
-        return a;
-    }
-    return b;
-}
 
 const Synapse = struct {
     queue: u8 = 0,
