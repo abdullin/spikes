@@ -160,7 +160,7 @@ const Synapse = struct {
     target: Ptr, //u16
 
     pub fn init(size: Delay, signal: i8, n: Ptr) Synapse {
-        const mask: u8 = ~@as(u8, 0) << size;
+        const mask: u8 = @as(u8, 1) << size;
         return Synapse{
             .mask = mask,
             .signal = signal,
@@ -189,7 +189,6 @@ const Synapse = struct {
         s.queue = s.queue << 1;
 
         if (s.queue & s.mask != 0) {
-            s.queue &= ~s.mask;
             neurons[s.target].enqueue(s.signal);
         }
     }
