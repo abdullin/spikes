@@ -178,10 +178,10 @@ const Synapse = struct {
     }
 
     fn process(s: *Synapse, neurons: []Neuron) void {
-        if (s.bit == true) {
-            s.queue |= 1;
-            s.bit = false;
-        }
+        const bit = @boolToInt(s.bit);
+        s.queue |= bit;
+        s.bit = false;
+
         if (s.queue == 0) {
             return;
         }
